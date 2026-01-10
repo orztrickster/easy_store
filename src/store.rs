@@ -23,9 +23,7 @@ pub struct Store {
 
 
 impl Store {
-    pub fn new() -> Self {
-        let flash_addr: u32 = 0x210000;
-        let flash_size: u32 = 0x100000;
+    pub fn new(flash_addr:u32, flash_size: u32) -> Self {
         let cluster_max_quantity: u32 = flash_size/CLUSTER_SIZE as u32;
         Self {
             flash_addr: flash_addr,
