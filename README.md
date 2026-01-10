@@ -54,6 +54,8 @@ build-std = ["alloc", "core"]
 
 Once all the above are set up, you can start using `easy_store`. To use `easy_store`, add the following line in your code:
 ```
+#![no_std]
+#![no_main]
 use easy_store::store::Store;
 ```
 

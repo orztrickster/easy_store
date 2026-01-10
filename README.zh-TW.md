@@ -51,6 +51,8 @@ build-std = ["alloc", "core"]
 
 以上都新增好後就可以開始使用了，要引用easy_store時新增
 ```
+#![no_std]
+#![no_main]
 use easy_store::store::Store;
 ```
 
