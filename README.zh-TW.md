@@ -7,13 +7,13 @@ Language:
 - [繁體中文](README.zh-TW.md)
 
 # 使用教學
-在Cargo.toml中新增
+在`Cargo.toml`中新增
 ```
 [dependencies]
 easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master" }
 ```
 
-於目錄下新增分區表partitions.csv
+於目錄下新增分區表`partitions.csv`
 ```
 # Name,   Type, SubType, Offset,   Size,     Flags
 nvs,      data, nvs,     0x9000,   0x4000
@@ -29,7 +29,7 @@ easy_store,2, 0x40,   0x210000, 0x100000
 [Offset]的欄位表示用於存放資料的分區開始的記憶體位置，這裡設定成0x210000，但你可以任意更改這個值。<br>
 [Size]的欄位表示用於存放資料的分區大小，這裡設定成0x100000，大小是1mb，但你可以任意更改這個值使空間增加或減少。<br>
 <br>
-要注意，使用分區表需要在.cargo/config.toml中新增--partition-table partitions.csv的指令才會啟用分區表，config.toml可以參考的範例例如:
+要注意，使用分區表需要在`.cargo/config.toml`中新增`--partition-table partitions.csv`的指令才會啟用分區表，`config.toml`可以參考的範例例如:
 ```
 [target.riscv32imc-unknown-none-elf]
 runner = "espflash flash --monitor --chip esp32c3 --partition-table partitions.csv"
@@ -49,14 +49,14 @@ target = "riscv32imc-unknown-none-elf"
 build-std = ["alloc", "core"]
 ```
 
-以上都新增好後就可以開始使用了，要引用easy_store時新增
+以上都新增好後就可以開始使用了，要引用`easy_store`時新增
 ```
 #![no_std]
 #![no_main]
 use easy_store::store::Store;
 ```
 
-在後續中使用假設要新增路徑名稱為/data/系統紀錄檔.txt的檔案，可以使用下列方式
+在後續中使用假設要新增路徑名稱為`/data/系統紀錄檔.txt`的檔案，可以使用下列方式
 ```
 let file_name = "/data/系統紀錄檔.txt"; // 檔案名稱（UTF-8）
 let file_data = "Hello World!!!";      // 檔案資料（UTF-8）
@@ -68,7 +68,7 @@ store.write(file_name,file_data);
 println!("已存檔 --> {:?}",file_name);
 ```
 
-在後續中使用假設要讀取路徑名稱為/data/系統紀錄檔.txt的檔案，可以使用下列方式
+在後續中使用假設要讀取路徑名稱為`/data/系統紀錄檔.txt`的檔案，可以使用下列方式
 ```
 store.show_file_name_exist("/data/系統紀錄檔.txt");
 
@@ -82,7 +82,7 @@ println!("讀取檔案內容 -->\n{}", file_data);
 store.show_usage_cluster();
 ```
 
-如果要刪除路徑名稱為/data/系統紀錄檔.txt的檔案，可以使用下列方式
+如果要刪除路徑名稱為`/data/系統紀錄檔.txt`的檔案，可以使用下列方式
 ```
 store.delete("/data/系統紀錄檔.txt");
 ```
