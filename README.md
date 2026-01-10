@@ -1,6 +1,6 @@
 # easy_store
 
-easy_store是用於在esp32c3中的flash中儲存檔案的開原程式，目前還在測試中，但大多功能應已可使用。
+easy_store是用於在esp32c3中的flash中儲存檔案的Rust開源程式，目前還在測試中，但大多功能應已可使用。
 
 # 使用教學
 在Cargo.toml中新增
