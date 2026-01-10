@@ -91,7 +91,7 @@ store.delete("/data/system_data.txt");
 To delete all files, you can use the following code:
 ```
 store.delete_all_data();
-
+```
 
 
 
