@@ -240,7 +240,6 @@ impl Store {
             let mut flash = FlashStorage::new();
             flash.read(cur_addr, &mut bytes).unwrap();
 
-            // 只允許從「檔案起始 cluster」開始判斷，避免從 continued_B 的中段 cluster 誤判
             if bytes[data_start..data_start + 4] != self.magic_name.to_be_bytes() {
                 continue;
             }
@@ -248,7 +247,7 @@ impl Store {
             let file_name_len_bytes = &bytes[data_start + 4..data_start + 8];
             let file_name_len = u32::from_be_bytes(file_name_len_bytes.try_into().unwrap()) as usize;
 
-            // 仍延用你原本假設：檔名在第一顆 cluster 內
+
             let name_start = data_start + 16;
             let name_end = name_start + file_name_len;
             if name_end > CLUSTER_SIZE {
@@ -264,7 +263,6 @@ impl Store {
                 continue;
             }
 
-            // 檔名符合：沿 continued_A 追鏈，把每顆 cluster 都標記起來
             loop {
                 if let Some(idx) = self.addr_to_cluster_index(cur_addr) {
                     cluster_vec[idx] = true;
@@ -279,7 +277,6 @@ impl Store {
                 let next_addr_bytes = &bytes[CLUSTER_SIZE - 4..CLUSTER_SIZE];
                 let next_addr = u32::from_be_bytes(next_addr_bytes.try_into().unwrap());
 
-                // 防呆：next_addr 不合理就停止，避免亂讀造成誤判
                 let Some(_) = self.addr_to_cluster_index(next_addr) else {
                     break;
                 };
