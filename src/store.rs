@@ -323,26 +323,45 @@ impl Store {
                                 let file_data_len_bytes = &bytes[data_start + 8..data_start + 12];  // 數據資料的長度
                                 let mut file_data_len = u32::from_be_bytes(file_data_len_bytes.try_into().unwrap());// 數據資料的長度
                                 let mut file_data_bytes: Vec<u8> = Vec::new();
-                                let mut data_start = name_end + 4;
+                                let mut file_data_start = name_end + 4;
+
+
+
+                                let mut len_block = [0u8; 8];
+                                len_block[0..4].copy_from_slice(&file_name_len.to_be_bytes());
+                                len_block[4..8].copy_from_slice(&file_data_len.to_be_bytes());
+                                let len_crc = self.crc32(&len_block);
+
+
+
+                                let read_len_crc = &bytes[data_start + 12..data_start + 16];
+
+                                if read_len_crc != &len_crc.to_be_bytes() {
+                                    println!("檔案損毀");
+                                    return String::new();
+                                }
+
+
+
                                 loop {
                                     let read_continued_A_bytes = &bytes[CLUSTER_SIZE - 8..CLUSTER_SIZE - 4];
                                     let read_continued_A = u32::from_be_bytes(read_continued_A_bytes.try_into().unwrap());
 
                                     if read_continued_A == self.continued_A {
 
-                                        file_data_bytes.extend_from_slice(&bytes[data_start..CLUSTER_SIZE - 8]);
+                                        file_data_bytes.extend_from_slice(&bytes[file_data_start..CLUSTER_SIZE - 8]);
 
                                         let next_addr_bytes = &bytes[CLUSTER_SIZE - 4..CLUSTER_SIZE];
                                         next_addr = u32::from_be_bytes(next_addr_bytes.try_into().unwrap());
 
                                         flash.read(next_addr, &mut bytes).unwrap();
 
-                                        file_data_len -= (CLUSTER_SIZE as u32 - 8 - data_start as u32);
+                                        file_data_len -= (CLUSTER_SIZE as u32 - 8 - file_data_start as u32);
 
-                                        data_start = 8;
+                                        file_data_start = 8;
 
                                     } else {
-                                        file_data_bytes.extend_from_slice(&bytes[data_start..data_start + file_data_len as usize]);
+                                        file_data_bytes.extend_from_slice(&bytes[file_data_start..file_data_start + file_data_len as usize]);
                                         break;
                                     }
                                 }

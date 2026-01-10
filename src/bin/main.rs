@@ -67,17 +67,17 @@ async fn main(spawner: Spawner) -> ! {
 
 
 
-    let file_name = "/data/系統紀錄檔.txt"; // 檔案名稱
-    let file_data = "台灣";                 // 檔案資料（UTF-8）
+    let file_name = "/data/系統紀錄檔.txt"; // 檔案名稱（UTF-8）
+    let file_data = "Hello World!!!";       // 檔案資料（UTF-8）
 
     let file_name_B = "/data/三體.txt"; // 檔案名稱
     let file_data_B = r#"  
     《三體：地球往事》
-作者：劉慈欣
+　　作者：劉慈欣
 
-正文
+　　正文
 
-前言
+　　前言
 
 　　《三體》終於能與科幻朋友們見面了，用連載的方式事先誰都沒有想到，也是無奈之舉。之前就題材問題與編輯們仔細商討過，感覺沒有什麼問題，但沒想到今年是文革三十周年這事兒，單行本一時出不了，也只能這樣了。
 
