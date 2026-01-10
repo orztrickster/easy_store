@@ -1,15 +1,22 @@
 # easy_store
 
-easy_store是用於在esp32c3中的flash中儲存檔案的Rust開源程式，目前還在測試中，但大多功能應已可使用。
+`easy_store` is an open-source Rust library for storing files in the flash memory of an ESP32-C3. The project is currently in testing, but most features should already be usable.
 
-# 使用教學
-在Cargo.toml中新增
+Language:
+- [English](README.md)
+- [繁體中文](README.zh-TW.md)
+
+## Usage
+
+Add the dependency in `Cargo.toml`:
+
 ```
 [dependencies]
 easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master" }
 ```
 
-於目錄下新增分區表partitions.csv
+Create a partition table `partitions.csv` in the project directory:
+
 ```
 # Name,   Type, SubType, Offset,   Size,     Flags
 nvs,      data, nvs,     0x9000,   0x4000
@@ -18,14 +25,14 @@ phy_init, data, phy,     0xF000,   0x1000
 factory,  app,  factory, 0x10000,  0x200000
 easy_store,2, 0x40,   0x210000, 0x100000
 ```
-在上述的分區表中，各個欄位的用法請參閱以下說明<br>
-[Name]的欄位中表示要用於存放資料的分區名稱，名稱可以任意指定，這裡設定成easy_store。<br>
-[Type]的欄位中請設定除了0、1以外的任意值，這裡設定2。<br>
-[SubType]的欄位請設定0x40。<br>
-[Offset]的欄位表示用於存放資料的分區開始的記憶體位置，這裡設定成0x210000，但你可以任意更改這個值。<br>
-[Size]的欄位表示用於存放資料的分區大小，這裡設定成0x100000，大小是1mb，但你可以任意更改這個值使空間增加或減少。<br>
+In the partition table above, the usage of each field is as follows:<br>
+The [Name] field specifies the name of the partition used for storing data, which can be任意指定，這裡設定成easy_store。<br>
+The [Type] field should be set to any value other than 0 or 1, here it is set to 2. <br>
+The [SubType] field should be set to 0x40.<br>
+The [Offset] field indicates the memory location where the data partition begins, set here as 0x210000, but you can change this value as needed.<br>
+The [Size] field indicates the size of the data partition, set here as 0x100000, equivalent to 1MB, but you can change this value to increase or decrease the space.<br>
 <br>
-要注意，使用分區表需要在.cargo/config.toml中新增--partition-table partitions.csv的指令才會啟用分區表，config.toml可以參考的範例例如:
+Note that using a partition table requires adding the --partition-table partitions.csv directive in .cargo/config.toml to activate the partition table. Here is an example of config.toml:
 ```
 [target.riscv32imc-unknown-none-elf]
 runner = "espflash flash --monitor --chip esp32c3 --partition-table partitions.csv"
@@ -45,46 +52,45 @@ target = "riscv32imc-unknown-none-elf"
 build-std = ["alloc", "core"]
 ```
 
-以上都新增好後就可以開始使用了，要引用easy_store時新增
+Once all the above are set up, you can start using `easy_store`. To use `easy_store`, add the following line in your code:
 ```
 use easy_store::store::Store;
 ```
 
-在後續中使用假設要新增路徑名稱為/data/系統紀錄檔.txt的檔案，可以使用下列方式
+To add a file with the path name `/data/system_data.txt`, you can use the following code:
 ```
-let file_name = "/data/系統紀錄檔.txt"; // 檔案名稱（UTF-8）
-let file_data = "Hello World!!!";      // 檔案資料（UTF-8）
+let file_name = "/data/system_data.txt"; // File name (UTF-8)
+let file_data = "Hello World!!!";      // File content (UTF-8)
 
 let mut store = Store::new(0x210000, 0x100000);
 store.delete_all_data();
 
 store.write(file_name,file_data);
-println!("已存檔 --> {:?}",file_name);
+println!("File saved --> {:?}",file_name);
 ```
 
-在後續中使用假設要讀取路徑名稱為/data/系統紀錄檔.txt的檔案，可以使用下列方式
+To read the file with the path name `/data/system_data.txt`, you can use the following code:
 ```
-store.show_file_name_exist("/data/系統紀錄檔.txt");
+store.show_file_name_exist("/data/system_data.txt");
 
-let file_data = store.read("/data/系統紀錄檔.txt");
-println!("讀取檔案內容 -->\n{}", file_data);
+let file_data = store.read("/data/system_data.txt");
+println!("File content -->\n{}", file_data);
 ```
 
 
-如果要讀取使用了多少容量可以使用
+To check the used storage capacity, you can use:
 ```
 store.show_usage_cluster();
 ```
 
-如果要刪除路徑名稱為/data/系統紀錄檔.txt的檔案，可以使用下列方式
+To delete the file with the path name `/data/system_data.txt`, you can use the following code:
 ```
-store.delete("/data/系統紀錄檔.txt");
+store.delete("/data/system_data.txt");
 ```
 
-如果要刪除全部檔案，可以使用下列方式
+To delete all files, you can use the following code:
 ```
 store.delete_all_data();
-```
 
 
 
