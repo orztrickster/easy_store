@@ -18,12 +18,12 @@ easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "mas
 Create a partition table `partitions.csv` in the project directory:
 
 ```
-# Name,   Type, SubType, Offset,   Size,     Flags
-nvs,      data, nvs,     0x9000,   0x4000
-otadata,  data, ota,     0xD000,   0x2000
-phy_init, data, phy,     0xF000,   0x1000
-factory,  app,  factory, 0x10000,  0x200000
-easy_store,2, 0x40,   0x210000, 0x100000
+#     Name,       Type,       SubType,       Offset,       Size,       Flags
+       nvs,       data,           nvs,       0x9000,     0x4000
+   otadata,       data,           ota,       0xD000,     0x2000
+  phy_init,       data,           phy,       0xF000,     0x1000
+   factory,        app,       factory,      0x10000,   0x200000
+easy_store,          2,          0x40,     0x210000,   0x100000
 ```
 In the partition table above, the usage of each field is as follows:<br>
 The [Name] field specifies the name of the partition used for storing data, which can be任意指定，這裡設定成easy_store。<br>

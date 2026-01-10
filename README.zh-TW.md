@@ -15,12 +15,12 @@ easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "mas
 
 於目錄下新增分區表`partitions.csv`
 ```
-# Name,   Type, SubType, Offset,   Size,     Flags
-nvs,      data, nvs,     0x9000,   0x4000
-otadata,  data, ota,     0xD000,   0x2000
-phy_init, data, phy,     0xF000,   0x1000
-factory,  app,  factory, 0x10000,  0x200000
-easy_store,2, 0x40,   0x210000, 0x100000
+#     Name,       Type,       SubType,       Offset,       Size,       Flags
+       nvs,       data,           nvs,       0x9000,     0x4000
+   otadata,       data,           ota,       0xD000,     0x2000
+  phy_init,       data,           phy,       0xF000,     0x1000
+   factory,        app,       factory,      0x10000,   0x200000
+easy_store,          2,          0x40,     0x210000,   0x100000
 ```
 在上述的分區表中，各個欄位的用法請參閱以下說明<br>
 [Name]的欄位中表示要用於存放資料的分區名稱，名稱可以任意指定，這裡設定成easy_store。<br>
