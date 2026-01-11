@@ -26,13 +26,13 @@ Create a partition table `partitions.csv` in the project directory:
 easy_store,          2,          0x40,     0x210000,   0x100000
 ```
 In the partition table above, the usage of each field is as follows:<br>
-The [Name] field specifies the name of the partition used for storing data, which can be easy_store。<br>
-The [Type] field should be set to any value other than 0 or 1, here it is set to 2. <br>
-The [SubType] field should be set to 0x40.<br>
-The [Offset] field indicates the memory location where the data partition begins, set here as 0x210000, but you can change this value as needed.<br>
-The [Size] field indicates the size of the data partition, set here as 0x100000, equivalent to 1MB, but you can change this value to increase or decrease the space.<br>
+The `[Name]` field specifies the name of the partition used for storing data, which can be easy_store。<br>
+The `[Type]` field should be set to any value other than 0 or 1, here it is set to 2. <br>
+The `[SubType]` field should be set to 0x40.<br>
+The `[Offset]` field indicates the memory location where the data partition begins, set here as `0x210000`, but you can change this value as needed.<br>
+The `[Size]` field indicates the size of the data partition, set here as `0x100000`, equivalent to 1MB, but you can change this value to increase or decrease the space.<br>
 <br>
-Note that using a partition table requires adding the --partition-table partitions.csv directive in .cargo/config.toml to activate the partition table. Here is an example of config.toml:
+Note that using a partition table requires adding the `--partition-table partitions.csv` directive in `.cargo/config.toml` to activate the partition table. Here is an example of config.toml:
 ```
 [target.riscv32imc-unknown-none-elf]
 runner = "espflash flash --monitor --chip esp32c3 --partition-table partitions.csv"
