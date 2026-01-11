@@ -26,7 +26,7 @@ Create a partition table `partitions.csv` in the project directory:
 easy_store,          2,          0x40,     0x210000,   0x100000
 ```
 In the partition table above, the usage of each field is as follows:<br>
-The [Name] field specifies the name of the partition used for storing data, which can be任意指定，這裡設定成easy_store。<br>
+The [Name] field specifies the name of the partition used for storing data, which can be easy_store。<br>
 The [Type] field should be set to any value other than 0 or 1, here it is set to 2. <br>
 The [SubType] field should be set to 0x40.<br>
 The [Offset] field indicates the memory location where the data partition begins, set here as 0x210000, but you can change this value as needed.<br>
