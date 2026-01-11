@@ -35,8 +35,11 @@ impl Store {
             continued_B: 0x01311AAD,
         }
     }
-    fn crc32(&self, data: &[u8]) -> u32 {
-        let mut crc: u32 = 0xFFFF_FFFF;
+    fn crc32_init(&self) -> u32 {
+        0xFFFF_FFFF
+    }
+
+    fn crc32_update(&self, mut crc: u32, data: &[u8]) -> u32 {
         for &b in data {
             crc ^= b as u32;
             for _ in 0..8 {
@@ -44,7 +47,16 @@ impl Store {
                 crc = (crc >> 1) ^ mask;
             }
         }
+        crc
+    }
+
+    fn crc32_finalize(&self, crc: u32) -> u32 {
         !crc
+    }
+
+    fn crc32(&self, data: &[u8]) -> u32 {
+        let mut crc: u32 = 0xFFFF_FFFF;
+        self.crc32_finalize(self.crc32_update(self.crc32_init(), data))
     }
     fn process_data(&self, file_name: &str, file_data: &str) -> Vec<u8>{
         let file_name_bytes = file_name.as_bytes();
@@ -337,20 +349,25 @@ impl Store {
                                 let read_len_crc = &bytes[data_start + 12..data_start + 16];
 
                                 if read_len_crc != &len_crc.to_be_bytes() {
-                                    println!("檔案損毀");
+                                    println!("檔案損毀 --> file_name_len + file_data_len");
                                     return String::new();
                                 }
 
+                                
 
 
+
+                           
+
+                                let mut crc = self.crc32_init();
                                 loop {
                                     let read_continued_A_bytes = &bytes[CLUSTER_SIZE - 8..CLUSTER_SIZE - 4];
                                     let read_continued_A = u32::from_be_bytes(read_continued_A_bytes.try_into().unwrap());
-
+                                    
                                     if read_continued_A == self.continued_A {
 
                                         file_data_bytes.extend_from_slice(&bytes[file_data_start..CLUSTER_SIZE - 8]);
-
+                                        crc = self.crc32_update(crc, &bytes[file_data_start..CLUSTER_SIZE - 8]);
                                         let next_addr_bytes = &bytes[CLUSTER_SIZE - 4..CLUSTER_SIZE];
                                         next_addr = u32::from_be_bytes(next_addr_bytes.try_into().unwrap());
 
@@ -362,6 +379,14 @@ impl Store {
 
                                     } else {
                                         file_data_bytes.extend_from_slice(&bytes[file_data_start..file_data_start + file_data_len as usize]);
+                                        crc = self.crc32_update(crc, &bytes[file_data_start..file_data_start + file_data_len as usize]);
+                                        let file_data_crc = self.crc32_finalize(crc);
+                                        let read_file_data_crc_bytes = &bytes[file_data_start + file_data_len as usize..file_data_start + file_data_len as usize + 4];
+                                        if file_data_crc.to_be_bytes() != read_file_data_crc_bytes {
+                                            println!("檔案損毀 --> file_data");
+                                            return String::new();
+                                        }
+                                        
                                         break;
                                     }
                                 }
