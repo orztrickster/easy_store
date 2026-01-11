@@ -10,27 +10,9 @@
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use esp_hal::clock::CpuClock;
-use esp_hal::rng::Rng;
 use esp_hal::timer::timg::TimerGroup;
 use esp_println as _;
 use esp_println::println;  // 啟用println
-use esp_println::print;  // 啟用println
-
-use esp_hal::gpio::{ Level, Output, OutputConfig};
-
-use esp_hal::ledc::{LSGlobalClkSource, Ledc, LowSpeed, channel, timer};
-use esp_hal::gpio::DriveMode;
-use esp_hal::main;
-use esp_hal::time::Rate;
-use esp_hal::ledc::timer::TimerIFace;
-use esp_hal::ledc::channel::ChannelIFace;
-
-
-use embedded_storage::{ReadStorage, Storage};
-use esp_storage::FlashStorage;
-use alloc::vec::Vec;
-use core::str;
-use alloc::string::String;
 use easy_store::store::Store;
 
 
@@ -67,11 +49,11 @@ async fn main(spawner: Spawner) -> ! {
 
 
 
-    let file_name = "/data/系統紀錄檔.txt"; // 檔案名稱（UTF-8）
-    let file_data = "Hello World!!!";       // 檔案資料（UTF-8）
+    let file_name_a = "/data/系統紀錄檔.txt"; // 檔案名稱（UTF-8）
+    let file_data_a = "Hello World!!!";       // 檔案資料（UTF-8）
 
-    let file_name_B = "/data/三體.txt"; // 檔案名稱
-    let file_data_B = r#"  
+    let file_name_b = "/data/三體.txt"; // 檔案名稱
+    let file_data_b = r#"  
     《三體：地球往事》
 　　作者：劉慈欣
 
@@ -106,10 +88,10 @@ async fn main(spawner: Spawner) -> ! {
 
     //store.delete_all_data();
 
-    store.write(file_name,file_data);
-    println!("已存檔 --> {:?}",file_name);
-    store.write(file_name_B,file_data_B);
-    println!("已存檔 --> {:?}",file_name_B);
+    store.write(file_name_a,file_data_a);
+    println!("已存檔 --> {:?}",file_name_a);
+    store.write(file_name_b,file_data_b);
+    println!("已存檔 --> {:?}",file_name_b);
     store.show_usage_cluster();
     store.show_usage_capacity();
 
