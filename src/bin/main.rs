@@ -81,6 +81,8 @@ async fn main(spawner: Spawner) -> ! {
 
 
 
+    let file_name_c = "/user/設定檔.txt"; // 檔案名稱（UTF-8）
+    let file_data_c = "user data...";       // 檔案資料（UTF-8）
 
 
 
@@ -92,17 +94,27 @@ async fn main(spawner: Spawner) -> ! {
     println!("已存檔 --> {:?}",file_name_a);
     store.write(file_name_b,file_data_b);
     println!("已存檔 --> {:?}",file_name_b);
+    store.write(file_name_c,file_data_c);
+    println!("已存檔 --> {:?}",file_name_c);
+
+    
+    store.show_all_data_name();
+
     store.show_usage_cluster();
     store.show_usage_capacity();
 
     store.show_file_name_exist("/data/系統紀錄檔.txt");
     store.show_file_name_exist("/data/三體.txt");
 
+
+    store.show_read_dir(&"/data");
+
+
     let file_data = store.read("/data/系統紀錄檔.txt");
-    println!("讀取檔案內容 -->\n{}", file_data);
+    println!("讀取檔案內容 ↴\n{}", file_data);
 
     let file_data = store.read("/data/三體.txt");
-    println!("讀取檔案內容 -->\n{}", file_data);
+    println!("讀取檔案內容 ↴\n{}", file_data);
 
     loop {
         Timer::after(Duration::from_secs(1)).await;

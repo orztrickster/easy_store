@@ -93,8 +93,11 @@ impl Store {
     }
 
 
+
+    
+
     pub fn show_usage_cluster(&self) {
-        println!("檢查目前檔案佔用了那些區塊⬇");
+        println!("檢查目前檔案佔用了那些區塊↴");
         let usage = self.check_usage();
         for i in usage {
             if i {
@@ -202,7 +205,7 @@ impl Store {
     }
 
     pub fn show_file_name_exist(&self, file_name: &str){
-        println!("檢查目前使用【{file_name}】的檔案佔用了那些區塊⬇");
+        println!("檢查目前使用【{file_name}】的檔案佔用了那些區塊↴");
         let cluster_vec = self.check_file_name_exist(file_name);
         for i in cluster_vec {
             if i {
@@ -298,6 +301,67 @@ impl Store {
         cluster_vec
     }
 
+    pub fn show_read_dir(&self, path: &str) {
+        println!("路徑【{:?}】下的檔案分別有↴",path);
+        for i in 0..self.cluster_max_quantity {
+            if self.check_used(i) {
+                let pos = self.magic_start_index_in_cluster(i);
+                if let Some(data_start) = pos {
+                    let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
+                    let mut bytes = [0u8; CLUSTER_SIZE];
+                    let mut flash = FlashStorage::new();
+                    flash.read(next_addr, &mut bytes).unwrap();
+                    if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
+                        let file_name_bytes = &bytes[data_start + 4..data_start + 8];
+                        let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
+
+                        let name_len = file_name_len as usize;
+                        let data_path_bytes = &bytes[data_start + 16..data_start + 16 + name_len];
+                        let name_end = data_start + 16 + name_len;
+                        let data_path = match str::from_utf8(data_path_bytes) {
+                            Ok(s) => s,
+                            Err(_) => {
+                                #[cfg(debug_assertions)]
+                                println!("data_path並非是UTF-8");
+                                ""
+                            }
+                        };
+                        if data_path.starts_with(path) {
+                            println!("{:?}",data_path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    pub fn show_all_data_name(&self) {
+        println!("全部儲存的檔案名稱 ↴");
+        for i in 0..self.cluster_max_quantity {
+            if self.check_used(i) {
+                let pos = self.magic_start_index_in_cluster(i);
+                if let Some(data_start) = pos {
+                    let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
+                    let mut bytes = [0u8; CLUSTER_SIZE];
+                    let mut flash = FlashStorage::new();
+                    flash.read(next_addr, &mut bytes).unwrap();
+                    if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
+                        let file_name_bytes = &bytes[data_start + 4..data_start + 8];
+                        let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
+
+                        let name_len = file_name_len as usize;
+                        let data_path_bytes = &bytes[data_start + 16..data_start + 16 + name_len];
+                        let name_end = data_start + 16 + name_len;
+                        let data_path = match str::from_utf8(data_path_bytes) {
+                            Ok(s) => println!("{:?}",s),
+                            Err(_) => ()
+                        };
+                    }
+                }
+            }
+        }
+    }
 
     pub fn read(&mut self, file_name: &str) -> String {
         let mut file_data = String::new();
