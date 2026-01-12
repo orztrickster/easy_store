@@ -12,7 +12,7 @@ Add the dependency in `Cargo.toml`:
 
 ```
 [dependencies]
-easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master" }
+easy_store = "0.1.0"
 ```
 
 Create a partition table `partitions.csv` in the project directory:

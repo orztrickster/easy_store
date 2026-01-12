@@ -10,7 +10,7 @@ Language:
 在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master" }
+easy_store = "0.1.0"
 ```
 
 於目錄下新增分區表`partitions.csv`
