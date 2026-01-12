@@ -147,8 +147,7 @@ impl Store {
         usage
     }
     #[cfg(debug_assertions)]
-    fn print_hex(&self,label: &str, bytes: &[u8]) {
-        print!("{label} (len={}): ", bytes.len());
+    fn print_hex(&self, bytes: &[u8]) {
         for (i, b) in bytes.iter().enumerate() {
             if i != 0 {
                 print!(" ");
@@ -161,7 +160,7 @@ impl Store {
     pub fn write(&mut self, file_name: &str, file_data: &str){
         let payload = self.process_data(file_name, file_data);
         //#[cfg(debug_assertions)]
-        //self.print_hex("payload", &payload);
+        //self.print_hex(&payload);
         let cluster_vec = self.check_file_name_exist(file_name); // 檢查目前使用file_name名稱的檔案佔用了那些區塊
         self.save_cluster(payload);  //寫入新檔案
         self.delete_cluster(cluster_vec);  //將重複的舊檔案刪除
@@ -322,7 +321,8 @@ impl Store {
                             let data_path = match str::from_utf8(data_path_bytes) {
                                 Ok(s) => s,
                                 Err(_) => {
-                                    println!("filename is not valid UTF-8");
+                                    #[cfg(debug_assertions)]
+                                    println!("data_path並非是UTF-8");
                                     ""
                                 }
                             };
@@ -346,6 +346,7 @@ impl Store {
                                 let read_len_crc = &bytes[data_start + 12..data_start + 16];
 
                                 if read_len_crc != &len_crc.to_be_bytes() {
+                                    #[cfg(debug_assertions)]
                                     println!("檔案損毀 --> file_name_len + file_data_len");
                                     return String::new();
                                 }
@@ -380,6 +381,7 @@ impl Store {
                                         let file_data_crc = self.crc32_finalize(crc);
                                         let read_file_data_crc_bytes = &bytes[file_data_start + file_data_len as usize..file_data_start + file_data_len as usize + 4];
                                         if file_data_crc.to_be_bytes() != read_file_data_crc_bytes {
+                                            #[cfg(debug_assertions)]
                                             println!("檔案損毀 --> file_data");
                                             return String::new();
                                         }
@@ -390,7 +392,8 @@ impl Store {
                                 file_data = match String::from_utf8(file_data_bytes) {
                                     Ok(s) => s,
                                     Err(_) => {
-                                        println!("data is not valid UTF-8");
+                                        #[cfg(debug_assertions)]
+                                        println!("file_data並非是UTF-8");
                                         String::new()
                                     }
                                 };
