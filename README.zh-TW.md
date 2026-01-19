@@ -1,19 +1,28 @@
 # easy_store
 
-easy_store是用於在esp32c3中的flash中儲存檔案的Rust開源程式，目前還在測試中，但大多功能應已可使用。
+easy_store是用於在`esp32`、`esp32c3`及`esp32c6`中的flash中儲存檔案的Rust開源程式，目前還在測試中，但大多功能應已可使用。
 
 Language:
 - [English](README.md)
 - [繁體中文](README.zh-TW.md)
-
+# 快速測試
+如果要快速測試easy_store在ESP的裝置上是否可以使用，請直接將目錄指定到對應的資料夾，例如`\easy_store\tests\esp32`，並執行`cargo run`。
 # 使用教學
-在`Cargo.toml`中新增
+(1)如果是直接從GitHub引用的，在`ESP32`的型號請於在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = "0.1.0"
+easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master", features = ["esp32"] }
+[profile.dev.package.esp-storage]
+opt-level = 3
 ```
-
-於目錄下新增分區表`partitions.csv`
+如果是`ESP32C3`的型號請於在`Cargo.toml`中新增
+```
+[dependencies]
+easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master", features = ["esp32c3"] }
+[profile.dev.package.esp-storage]
+opt-level = 3
+```
+(2)接著於目錄下新增分區表`partitions.csv`
 ```
 #     Name,       Type,       SubType,       Offset,       Size,       Flags
        nvs,       data,           nvs,       0x9000,     0x4000
@@ -33,23 +42,9 @@ easy_store,          2,          0x40,     0x210000,   0x100000
 ```
 [target.riscv32imc-unknown-none-elf]
 runner = "espflash flash --monitor --chip esp32c3 --partition-table partitions.csv"
-
-[env]
-
-[build]
-rustflags = [
-  # Required to obtain backtraces (e.g. when using the "esp-backtrace" crate.)
-  # NOTE: May negatively impact performance of produced code
-  "-C", "force-frame-pointers",
-]
-
-target = "riscv32imc-unknown-none-elf"
-
-[unstable]
-build-std = ["alloc", "core"]
 ```
 
-以上都新增好後就可以開始使用了，要引用`easy_store`時新增
+(3)以上都新增好後就可以開始使用了，要引用`easy_store`時新增
 ```
 #![no_std]
 #![no_main]

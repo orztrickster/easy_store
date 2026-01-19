@@ -2,8 +2,11 @@
 use alloc::vec::Vec;
 use core::str;
 use embedded_storage::{ReadStorage, Storage};
+#[cfg(feature = "esp")]
 use esp_hal::rng::Rng;
+#[cfg(feature = "esp")]
 use esp_println::{print, println};
+#[cfg(feature = "esp")]
 use esp_storage::FlashStorage;
 
 
@@ -195,12 +198,14 @@ impl Store {
         // 刪除檔名的內容
         let mut flash = FlashStorage::new();
         let cluster_vec = self.check_file_name_exist(file_name);
+        let mut n:u32 = 0;
         for i in cluster_vec {
             if i {
                 self.cluster[0..CLUSTER_SIZE].fill(0xFF);
                 let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
                 flash.write(delete_addr, &self.cluster).unwrap();
             }
+            n += 1;
         }
     }
 

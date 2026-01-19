@@ -1,15 +1,7 @@
-use std::path::Path;
-
 fn main() {
     linker_be_nice();
-
-    // 只有在本 crate 目錄下真的存在 linkall.x 時才加入
-    // 避免 easy_store 被其他專案引用時，強制要求對方也要提供 linkall.x
-    let manifest_dir = std::env::var_os("CARGO_MANIFEST_DIR").unwrap();
-    let linkall = Path::new(&manifest_dir).join("linkall.x");
-    if linkall.exists() {
-        println!("cargo:rustc-link-arg=-Tlinkall.x");
-    }
+    // make sure linkall.x is the last linker script (otherwise might cause problems with flip-link)
+    println!("cargo:rustc-link-arg=-Tlinkall.x");
 }
 
 fn linker_be_nice() {
@@ -62,6 +54,7 @@ fn linker_be_nice() {
                 }
                 _ => (),
             },
+            // we don't have anything helpful for "missing-lib" yet
             _ => {
                 std::process::exit(1);
             }
