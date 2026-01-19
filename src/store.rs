@@ -2,6 +2,7 @@
 use alloc::vec::Vec;
 use core::str;
 use embedded_storage::{ReadStorage, Storage};
+
 #[cfg(feature = "esp")]
 use esp_hal::rng::Rng;
 #[cfg(feature = "esp")]
@@ -9,10 +10,18 @@ use esp_println::{print, println};
 #[cfg(feature = "esp")]
 use esp_storage::FlashStorage;
 
-
+#[cfg(not(feature = "esp"))]
+macro_rules! println {
+    ($($arg:tt)*) => {};
+}
+#[cfg(not(feature = "esp"))]
+macro_rules! print {
+    ($($arg:tt)*) => {};
+}
 
 const CLUSTER_SIZE: usize = 4096;
 const CONCRETE_CLUSTER_SIZE: usize = CLUSTER_SIZE - 8;
+
 pub struct Store {
     flash_addr: u32,
     flash_size: u32,
@@ -23,17 +32,15 @@ pub struct Store {
     continued_b: u32,
 }
 
-
-
 impl Store {
-    pub fn new(flash_addr:u32, flash_size: u32) -> Self {
-        let cluster_max_quantity: u32 = flash_size/CLUSTER_SIZE as u32;
+    pub fn new(flash_addr: u32, flash_size: u32) -> Self {
+        let cluster_max_quantity: u32 = flash_size / CLUSTER_SIZE as u32;
         Self {
-            flash_addr: flash_addr,
-            flash_size: flash_size,
+            flash_addr,
+            flash_size,
             cluster: [0xFF; CLUSTER_SIZE],
             magic_name: 0x01311AAB,
-            cluster_max_quantity: cluster_max_quantity,
+            cluster_max_quantity,
             continued_a: 0x01311AAC,
             continued_b: 0x01311AAD,
         }
@@ -98,7 +105,6 @@ impl Store {
 
 
     
-
     pub fn show_usage_cluster(&self) {
         println!("檢查目前檔案佔用了那些區塊↴");
         let usage = self.check_usage();
