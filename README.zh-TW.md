@@ -1,6 +1,7 @@
 # easy_store
 
-easy_store是用於在`esp32`、`esp32c3`及`esp32c6`中的flash中儲存檔案的Rust開源程式，目前還在測試中，但大多功能應已可使用。
+easy_store是用於在`esp32`及`esp32c3`中的flash中儲存檔案的Rust開源程式，請參考`tests`中的範例。<br>
+`esp32c2`、`esp32c6`、`esp32h2`、`esp32s2`及`esp32s3`並沒有實際驗證過，但是可以使用`esp-generate`建立檔案，並參考`esp32`及`esp32c3`中的用法。
 
 Language:
 - [English](README.md)
@@ -8,17 +9,31 @@ Language:
 # 快速測試
 如果要快速測試easy_store在ESP的裝置上是否可以使用，請直接將目錄指定到對應的資料夾，例如`\easy_store\tests\esp32`，並執行`cargo run`。
 # 使用教學
-(1)如果是直接從GitHub引用的，在`ESP32`的型號請於在`Cargo.toml`中新增
+(1a)如果是直接從GitHub引用的，在`ESP32`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
 easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master", features = ["esp32"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```
-如果是`ESP32C3`的型號請於在`Cargo.toml`中新增
+如果是`ESP32C3`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
 easy_store = { git = "https://github.com/orztrickster/easy_store", branch = "master", features = ["esp32c3"] }
+[profile.dev.package.esp-storage]
+opt-level = 3
+```
+(1b)如果是從crates.io引用的，在`ESP32`的型號請在`Cargo.toml`中新增
+```
+[dependencies]
+easy_store = { version = "0.2.0", features = ["esp32"] }
+[profile.dev.package.esp-storage]
+opt-level = 3
+```
+如果是`ESP32C3`的型號請在`Cargo.toml`中新增
+```
+[dependencies]
+easy_store = { version = "0.2.0", features = ["esp32c3"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```

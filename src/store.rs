@@ -1,8 +1,11 @@
-﻿use alloc::string::String;
+﻿#[cfg(feature = "esp")]
+use alloc::string::String;
+#[cfg(feature = "esp")]
 use alloc::vec::Vec;
+#[cfg(feature = "esp")]
 use core::str;
+#[cfg(feature = "esp")]
 use embedded_storage::{ReadStorage, Storage};
-
 #[cfg(feature = "esp")]
 use esp_hal::rng::Rng;
 #[cfg(feature = "esp")]
@@ -10,14 +13,7 @@ use esp_println::{print, println};
 #[cfg(feature = "esp")]
 use esp_storage::FlashStorage;
 
-#[cfg(not(feature = "esp"))]
-macro_rules! println {
-    ($($arg:tt)*) => {};
-}
-#[cfg(not(feature = "esp"))]
-macro_rules! print {
-    ($($arg:tt)*) => {};
-}
+
 
 const CLUSTER_SIZE: usize = 4096;
 const CONCRETE_CLUSTER_SIZE: usize = CLUSTER_SIZE - 8;
@@ -31,7 +27,7 @@ pub struct Store {
     continued_a: u32,
     continued_b: u32,
 }
-
+#[cfg(feature = "esp")]
 impl Store {
     pub fn new(flash_addr: u32, flash_size: u32) -> Self {
         let cluster_max_quantity: u32 = flash_size / CLUSTER_SIZE as u32;
