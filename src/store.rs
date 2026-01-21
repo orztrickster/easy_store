@@ -204,7 +204,7 @@ impl Store {
         for i in cluster_vec {
             if i {
                 self.cluster[0..CLUSTER_SIZE].fill(0xFF);
-                let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
+                let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * n as u32;
                 flash.write(delete_addr, &self.cluster).unwrap();
             }
             n += 1;
@@ -570,7 +570,7 @@ impl Store {
             if n == 0 {
                 data_let -= CONCRETE_CLUSTER_SIZE as isize;
             } else {
-                data_let -= CONCRETE_CLUSTER_SIZE as isize + 8;
+                data_let -= CONCRETE_CLUSTER_SIZE as isize - 8;   // 因為第二個區塊開始，前方要接上[4byte（未結束標示B）（continued_b = 0x01311AAD）][4byte（上一個區塊的地址）]，因此要減 8 byte
             }
             n += 1;
 
