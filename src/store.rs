@@ -204,7 +204,7 @@ impl Store {
         for i in cluster_vec {
             if i {
                 self.cluster[0..CLUSTER_SIZE].fill(0xFF);
-                let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
+                let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * n as u32;
                 flash.write(delete_addr, &self.cluster).unwrap();
             }
             n += 1;
