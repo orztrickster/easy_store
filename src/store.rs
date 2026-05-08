@@ -26,12 +26,13 @@ pub struct Store {
     cluster_max_quantity: u32,
     continued_a: u32,
     continued_b: u32,
+    write_cursor: u32,
 }
 #[cfg(feature = "esp")]
 impl Store {
     pub fn new(flash_addr: u32, flash_size: u32) -> Self {
         let cluster_max_quantity: u32 = flash_size / CLUSTER_SIZE as u32;
-        Self {
+        let mut store = Self {
             flash_addr,
             flash_size,
             cluster: [0xFF; CLUSTER_SIZE],
@@ -39,6 +40,39 @@ impl Store {
             cluster_max_quantity,
             continued_a: 0x01311AAC,
             continued_b: 0x01311AAD,
+            write_cursor: 0,
+        };
+        store.write_cursor = store.init_cursor();
+        store
+    }
+    fn init_cursor(&self) -> u32 {
+        // 取「最大已用 cluster index + 1」作為起點（mod max），無檔案則回 0
+        // 重開機後從這裡接著寫，磨損不會每次都從低位址開始累積
+        let mut highest: Option<u32> = None;
+        for i in 0..self.cluster_max_quantity {
+            if self.check_used(i) {
+                highest = Some(i);
+            }
+        }
+        match highest {
+            Some(h) => (h + 1) % self.cluster_max_quantity,
+            None => 0,
+        }
+    }
+    fn find_free_cluster_from(&self, start: u32) -> u32 {
+        // 從 start 繞一圈找 free cluster；全滿時回 start（呼叫端的 flash.write 會 panic，與原行為一致）
+        let max = self.cluster_max_quantity;
+        let mut n = start % max;
+        let mut scanned: u32 = 0;
+        loop {
+            if !self.check_used(n) {
+                return n;
+            }
+            n = (n + 1) % max;
+            scanned += 1;
+            if scanned >= max {
+                return start % max;
+            }
         }
     }
     fn crc32_init(&self) -> u32 {
@@ -169,6 +203,16 @@ impl Store {
         let payload = self.process_data(file_name, file_data);
         //#[cfg(debug_assertions)]
         //self.print_hex(&payload);
+
+        // 空間不足時拒絕寫入並保留舊檔；guard 必須在這裡而不是 save_cluster 裡，
+        // 否則 save_cluster early-return 後 delete_cluster 仍會執行，舊檔會被誤刪
+        let needed = self.need_quantity(&payload);
+        let free = self.count_free_clusters();
+        if needed > free {
+            println!("空間不足，拒絕寫入【{file_name}】（需 {} cluster，剩餘 {}）", needed, free);
+            return;
+        }
+
         let cluster_vec = self.check_file_name_exist(file_name); // 檢查目前使用file_name名稱的檔案佔用了那些區塊
         self.save_cluster(payload);  //寫入新檔案
         self.delete_cluster(cluster_vec);  //將重複的舊檔案刪除
@@ -537,31 +581,27 @@ impl Store {
             }
         }
     }
-    fn next_cluster(&self) -> u32 {
-        let mut n = 0;
-        loop {
-            if self.check_used(n) {
-                n += 1;
-            } else {
-               break;
-            }
-        }
+    fn next_cluster(&mut self) -> u32 {
+        // 從 cursor 出發找 free cluster，並把 cursor 推進到 found+1
+        // 寫入點輪流分散到整個分區，避免低位址 sector 被反覆 erase
+        let n = self.find_free_cluster_from(self.write_cursor);
+        self.write_cursor = (n + 1) % self.cluster_max_quantity;
         n
     }
-    fn next_next_cluster(&self) -> u32 {
-        let mut n = 0;
-        let mut two = false;
-        loop {
-            if self.check_used(n) {
-                n += 1;
-            } else if two && self.check_used(n) == false {
-                break;
-            } else {
-                two = true;
-                n += 1;
+    fn next_next_cluster(&mut self) -> u32 {
+        // 預看下一輪 next_cluster() 會回的值；不推進 cursor
+        // save_cluster 多 cluster 路徑用這個算 continued_a 指向的下個區塊位址
+        self.find_free_cluster_from(self.write_cursor)
+    }
+    fn count_free_clusters(&self) -> u32 {
+        // 計算目前有多少 free cluster；給 save_cluster 做空間檢查用
+        let mut count: u32 = 0;
+        for i in 0..self.cluster_max_quantity {
+            if !self.check_used(i) {
+                count += 1;
             }
         }
-        n
+        count
     }
     fn need_quantity(&self, payload: &Vec<u8>) -> u32 {
         let mut data_let: isize = payload.len() as isize;
@@ -586,11 +626,9 @@ impl Store {
         // 儲存邏輯 [4byte（Magic Number = 0x01311AAB）][4byte（檔案名稱長度）][4byte（資料長度）][4bite(檔案名稱長度+資料長度CRC32)][檔案名稱資料][4bite(檔案名稱資料CRC32)][真實資料][4bite(真實資料CRC32)]
         // 如果需要分區的話，在每個要分區的尾端加上[4byte（未結束標示A）（continued_a = 0x01311AAC）][4byte（下一個區塊的地址）]
         // 接續的cluster的前端要加上[4byte（未結束標示B）（continued_b = 0x01311AAD）][4byte（上一個區塊的地址）]
-  
+
 
         let require_clusters_n = self.need_quantity(&payload);   //確認payload需要的clusters數量
-
-    
 
         if require_clusters_n == 1 {
             self.cluster[0..CLUSTER_SIZE].fill(0xFF);
