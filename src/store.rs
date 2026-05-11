@@ -97,9 +97,9 @@ impl Store {
     fn crc32(&self, data: &[u8]) -> u32 {
         self.crc32_finalize(self.crc32_update(self.crc32_init(), data))
     }
-    fn process_data(&self, file_name: &str, file_data: &str) -> Vec<u8>{
+    fn process_data(&self, file_name: &str, file_data: &[u8]) -> Vec<u8>{
         let file_name_bytes = file_name.as_bytes();
-        let file_data_bytes = file_data.as_bytes();
+        let file_data_bytes = file_data;
         let file_name_len: u32 = file_name_bytes.len() as u32;
         let file_data_len: u32 = file_data_bytes.len() as u32;
         let mut payload: Vec<u8> = Vec::new();
@@ -200,6 +200,10 @@ impl Store {
     }
 
     pub fn write(&mut self, file_name: &str, file_data: &str){
+        self.write_bytes(file_name, file_data.as_bytes());
+    }
+
+    pub fn write_bytes(&mut self, file_name: &str, file_data: &[u8]){
         let payload = self.process_data(file_name, file_data);
         //#[cfg(debug_assertions)]
         //self.print_hex(&payload);
@@ -415,7 +419,18 @@ impl Store {
     }
 
     pub fn read(&mut self, file_name: &str) -> String {
-        let mut file_data = String::new();
+        match String::from_utf8(self.read_bytes(file_name)) {
+            Ok(s) => s,
+            Err(_) => {
+                #[cfg(debug_assertions)]
+                println!("file_data並非是UTF-8");
+                String::new()
+            }
+        }
+    }
+
+    pub fn read_bytes(&mut self, file_name: &str) -> Vec<u8> {
+        let mut file_data_bytes: Vec<u8> = Vec::new();
         for i in 0..self.cluster_max_quantity {
             if self.check_used(i) {
                 let pos = self.magic_start_index_in_cluster(i);
@@ -446,7 +461,6 @@ impl Store {
                                 // 先假設檔名都在第1區塊內，未來要檢查這部分
                                 let file_data_len_bytes = &bytes[data_start + 8..data_start + 12];  // 數據資料的長度
                                 let mut file_data_len = u32::from_be_bytes(file_data_len_bytes.try_into().unwrap());// 數據資料的長度
-                                let mut file_data_bytes: Vec<u8> = Vec::new();
                                 let mut file_data_start = name_end + 4;
 
 
@@ -463,7 +477,7 @@ impl Store {
                                 if read_len_crc != &len_crc.to_be_bytes() {
                                     #[cfg(debug_assertions)]
                                     println!("檔案損毀 --> file_name_len + file_data_len");
-                                    return String::new();
+                                    return Vec::new();
                                 }
 
                                 
@@ -498,31 +512,23 @@ impl Store {
                                         if file_data_crc.to_be_bytes() != read_file_data_crc_bytes {
                                             #[cfg(debug_assertions)]
                                             println!("檔案損毀 --> file_data");
-                                            return String::new();
+                                            return Vec::new();
                                         }
                                         
                                         break;
                                     }
                                 }
-                                file_data = match String::from_utf8(file_data_bytes) {
-                                    Ok(s) => s,
-                                    Err(_) => {
-                                        #[cfg(debug_assertions)]
-                                        println!("file_data並非是UTF-8");
-                                        String::new()
-                                    }
-                                };
                                 break;
                             }
                         }
                     }
                     None => {
-                        file_data.clear();  //正常情況不應該輸出此值
+                        file_data_bytes.clear();  //正常情況不應該輸出此值
                     }
                 }
             }
         }
-        file_data
+        file_data_bytes
     }
 
 
