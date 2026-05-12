@@ -26,14 +26,14 @@ opt-level = 3
 (1b)如果是從crates.io引用的，在`ESP32`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { version = "0.2.0", features = ["esp32"] }
+easy_store = { version = "0.2.3", features = ["esp32"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```
 如果是`ESP32C3`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { version = "0.2.0", features = ["esp32c3"] }
+easy_store = { version = "0.2.3", features = ["esp32c3"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```

@@ -42,7 +42,7 @@ opt-level = 3
 ```
 [dependencies]
 
-easy_store = { version = "0.2.0", features = ["esp32"] }
+easy_store = { version = "0.2.3", features = ["esp32"] }
 
 [profile.dev.package.esp-storage]
 
@@ -54,7 +54,7 @@ If the model is `ESP32C3`, please add the following to `Cargo.toml`:
 ```
 [dependencies]
 
-easy_store = { version = "0.2.0", features = ["esp32c3"] }
+easy_store = { version = "0.2.3", features = ["esp32c3"] }
 
 [profile.dev.package.esp-storage]
 
