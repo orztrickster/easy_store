@@ -26,14 +26,14 @@ opt-level = 3
 (1b)如果是從crates.io引用的，在`ESP32`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { version = "0.3.0", features = ["esp32"] }
+easy_store = { version = "0.3.1", features = ["esp32"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```
 如果是`ESP32C3`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { version = "0.3.0", features = ["esp32c3"] }
+easy_store = { version = "0.3.1", features = ["esp32c3"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```
@@ -101,6 +101,33 @@ store.write_bytes(file_name, file_data);
 let file_data = store.read_bytes("/img/logo.png"); // 回傳 Vec<u8>
 ```
 `write` 與 `read` 其實是上述兩個函式的薄封裝（多做了 UTF-8 編解碼），底層儲存格式對內容沒有任何限制。
+
+要在程式裡列出或檢查檔案，使用 `files()`、`read_dir(path)`、`exists(file_name)`：
+
+```
+let all = store.files();
+// 全部檔案，例如：
+// ["/data/foo.txt", "/data/sub/a.txt", "/user/cfg.json"]
+
+let entries = store.read_dir("/data");
+// 只列「/data」的直屬子項目；子目錄結尾用 '/' 標示
+// ["/data/foo.txt", "/data/sub/"]
+
+if store.exists("/data/foo.txt") {
+    // ...
+}
+```
+
+`read_dir` 對齊 `std::fs::read_dir` 的語意（底層是扁平的 key-value）：
+
+- 結尾 `/` 會自動正規化，`read_dir("/data")` 與 `read_dir("/data/")` 等價。
+- 只回直屬子項目。`/data/sub/inner.txt` 不會直接出現，而是以 `/data/sub/`（結尾 `/`）這個合成目錄出現；要再進去看就呼叫 `read_dir("/data/sub")`。
+- 同前綴但不同目錄不會混淆 —— `read_dir("/data")` 不會把 `/data2/...` 列進來。
+- 對每個回傳項目可用 `path.ends_with('/')` 判斷是合成目錄還是真實檔案。
+
+`exists` 是完整路徑的精確比對 —— 就算 `/data/foo.txt` 存在，`exists("/data")` 仍會回 `false`（因為沒有「`/data`」這個檔案）。
+
+舊的 `show_all_data_name`、`show_read_dir`、`show_file_name_exist` 仍保留，是上述三個函式的 `println!` 薄包裝。
 
 
 如果要讀取使用了多少容量可以使用

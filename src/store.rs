@@ -271,6 +271,10 @@ impl Store {
         }
         println!("");
     }
+
+    pub fn exists(&mut self, file_name: &str) -> bool {
+        self.files().iter().any(|f| f == file_name)
+    }
     fn addr_to_cluster_index(&self, addr: u32) -> Option<usize> {
         if addr < self.flash_addr {
             return None;
@@ -355,63 +359,74 @@ impl Store {
         cluster_vec
     }
 
-    pub fn show_read_dir(&mut self, path: &str) {
-        println!("路徑【{:?}】下的檔案分別有↴",path);
+    pub fn files(&mut self) -> Vec<String> {
+        let mut result: Vec<String> = Vec::new();
         for i in 0..self.cluster_max_quantity {
-            if self.check_used(i) {
-                let pos = self.magic_start_index_in_cluster(i);
-                if let Some(data_start) = pos {
-                    let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
-                    let mut bytes = [0u8; CLUSTER_SIZE];
-                    self.flash.read(next_addr, &mut bytes).unwrap();
-                    if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
-                        let file_name_bytes = &bytes[data_start + 4..data_start + 8];
-                        let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
-
-                        let name_len = file_name_len as usize;
-                        let data_path_bytes = &bytes[data_start + 16..data_start + 16 + name_len];
-                        let name_end = data_start + 16 + name_len;
-                        let data_path = match str::from_utf8(data_path_bytes) {
-                            Ok(s) => s,
-                            Err(_) => {
-                                #[cfg(debug_assertions)]
-                                println!("data_path並非是UTF-8");
-                                ""
-                            }
-                        };
-                        if data_path.starts_with(path) {
-                            println!("{:?}",data_path);
-                        }
-                    }
-                }
+            if !self.check_used(i) {
+                continue;
             }
+            let Some(data_start) = self.magic_start_index_in_cluster(i) else {
+                continue;
+            };
+            let addr = self.flash_addr + CLUSTER_SIZE as u32 * i;
+            let mut bytes = [0u8; CLUSTER_SIZE];
+            self.flash.read(addr, &mut bytes).unwrap();
+            if bytes[data_start..data_start + 4] != self.magic_name.to_be_bytes() {
+                continue;
+            }
+            let file_name_len_bytes = &bytes[data_start + 4..data_start + 8];
+            let file_name_len = u32::from_be_bytes(file_name_len_bytes.try_into().unwrap()) as usize;
+            let name_start = data_start + 16;
+            let name_end = name_start + file_name_len;
+            if name_end > CLUSTER_SIZE {
+                continue;
+            }
+            if let Ok(s) = str::from_utf8(&bytes[name_start..name_end]) {
+                result.push(String::from(s));
+            }
+        }
+        result
+    }
+
+    pub fn read_dir(&mut self, path: &str) -> Vec<String> {
+        // 模仿 std::fs::read_dir：只回直屬子項目
+        // 檔案 → 完整路徑；下一層子目錄 → 用尾端 '/' 標示（例如 "/data/sub/"）
+        let mut prefix = String::from(path);
+        if !prefix.ends_with('/') {
+            prefix.push('/');
+        }
+        let mut result: Vec<String> = Vec::new();
+        for file in self.files() {
+            let Some(rest) = file.strip_prefix(&prefix) else {
+                continue;
+            };
+            let entry = match rest.find('/') {
+                Some(idx) => {
+                    let mut p = String::from(&prefix);
+                    p.push_str(&rest[..idx]);
+                    p.push('/');
+                    p
+                }
+                None => file.clone(),
+            };
+            if !result.contains(&entry) {
+                result.push(entry);
+            }
+        }
+        result
+    }
+
+    pub fn show_read_dir(&mut self, path: &str) {
+        println!("路徑【{:?}】下的檔案分別有↴", path);
+        for name in self.read_dir(path) {
+            println!("{:?}", name);
         }
     }
 
-
     pub fn show_all_data_name(&mut self) {
         println!("全部儲存的檔案名稱 ↴");
-        for i in 0..self.cluster_max_quantity {
-            if self.check_used(i) {
-                let pos = self.magic_start_index_in_cluster(i);
-                if let Some(data_start) = pos {
-                    let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
-                    let mut bytes = [0u8; CLUSTER_SIZE];
-                    self.flash.read(next_addr, &mut bytes).unwrap();
-                    if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
-                        let file_name_bytes = &bytes[data_start + 4..data_start + 8];
-                        let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
-
-                        let name_len = file_name_len as usize;
-                        let data_path_bytes = &bytes[data_start + 16..data_start + 16 + name_len];
-                        let name_end = data_start + 16 + name_len;
-                        let data_path = match str::from_utf8(data_path_bytes) {
-                            Ok(s) => println!("{:?}",s),
-                            Err(_) => ()
-                        };
-                    }
-                }
-            }
+        for name in self.files() {
+            println!("{:?}", name);
         }
     }
 

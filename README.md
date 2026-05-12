@@ -42,7 +42,7 @@ opt-level = 3
 ```
 [dependencies]
 
-easy_store = { version = "0.3.0", features = ["esp32"] }
+easy_store = { version = "0.3.1", features = ["esp32"] }
 
 [profile.dev.package.esp-storage]
 
@@ -54,7 +54,7 @@ If the model is `ESP32C3`, please add the following to `Cargo.toml`:
 ```
 [dependencies]
 
-easy_store = { version = "0.3.0", features = ["esp32c3"] }
+easy_store = { version = "0.3.1", features = ["esp32c3"] }
 
 [profile.dev.package.esp-storage]
 
@@ -144,6 +144,33 @@ store.write_bytes(file_name, file_data);
 let file_data = store.read_bytes("/img/logo.png"); // returns Vec<u8>
 ```
 `write` and `read` are thin wrappers around the byte-oriented versions (doing UTF-8 encode/decode). The underlying storage format makes no assumption about the content.
+
+To enumerate or look up files programmatically, use `files()`, `read_dir(path)` and `exists(file_name)`:
+
+```
+let all = store.files();
+// all files in storage, e.g.
+// ["/data/foo.txt", "/data/sub/a.txt", "/user/cfg.json"]
+
+let entries = store.read_dir("/data");
+// direct children of "/data" only; subdirectories are marked with a trailing '/'
+// ["/data/foo.txt", "/data/sub/"]
+
+if store.exists("/data/foo.txt") {
+    // ...
+}
+```
+
+`read_dir` mirrors `std::fs::read_dir` semantics on top of the flat key-value layout:
+
+- The trailing `/` of the prefix is normalised, so `read_dir("/data")` and `read_dir("/data/")` are equivalent.
+- Only direct children are returned. `/data/sub/inner.txt` is reported as the synthetic directory entry `/data/sub/` (note the trailing `/`); to descend further, call `read_dir("/data/sub")`.
+- Sibling prefixes are not confused — `read_dir("/data")` does not include `/data2/...`.
+- Use `path.ends_with('/')` on each entry to tell a synthetic directory from a real file.
+
+`exists` is a strict equality check on the full file path — `exists("/data")` returns `false` even when files like `/data/foo.txt` exist.
+
+The existing `show_all_data_name`, `show_read_dir`, and `show_file_name_exist` are kept as thin `println!` wrappers around the functions above.
 
 
 To read the usage data, use:

@@ -87,6 +87,13 @@ fn main() -> ! {
 
     store.show_read_dir(&"/data");
 
+    // 新增的程式化 API
+    println!("files()              --> {:?}", store.files());
+    println!("read_dir(\"/\")       --> {:?}", store.read_dir("/"));
+    println!("read_dir(\"/data\")    --> {:?}", store.read_dir("/data"));
+    println!("exists(系統紀錄檔)    --> {}", store.exists("/data/系統紀錄檔.txt"));
+    println!("exists(不存在)        --> {}", store.exists("/data/不存在.txt"));
+
     let file_data = store.read("/data/系統紀錄檔.txt");
     println!("讀取檔案內容 ↴\n{}", file_data);
 
