@@ -1,6 +1,6 @@
 [package]
 name = "easy_store"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 license = "MIT"
 description = "A simple flash storage format for embedded systems"
@@ -27,8 +27,8 @@ esp32s3 = ["esp", "esp-hal/esp32s3", "esp-storage/esp32s3", "esp-println/esp32s3
 [dependencies]
 embedded-storage = "0.3.0"
 
-esp-hal = { version = "~1.0", features = ["unstable"], optional = true }
-esp-storage = { version = "0.5", optional = true }
+esp-hal = { version = "~1.1", features = ["unstable"], optional = true }
+esp-storage = { version = "0.9", optional = true }
 esp-println = { version = "0.12", optional = true }
 
 [profile.dev.package.esp-storage]

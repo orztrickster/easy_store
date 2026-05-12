@@ -42,7 +42,7 @@ opt-level = 3
 ```
 [dependencies]
 
-easy_store = { version = "0.2.3", features = ["esp32"] }
+easy_store = { version = "0.3.0", features = ["esp32"] }
 
 [profile.dev.package.esp-storage]
 
@@ -54,7 +54,7 @@ If the model is `ESP32C3`, please add the following to `Cargo.toml`:
 ```
 [dependencies]
 
-easy_store = { version = "0.2.3", features = ["esp32c3"] }
+easy_store = { version = "0.3.0", features = ["esp32c3"] }
 
 [profile.dev.package.esp-storage]
 
@@ -102,14 +102,18 @@ use easy_store::store::Store;
 
 ```
 
-In subsequent use, assuming you want to add a file with the path name `/data/system_record_file.txt`, you can use the following method:
+In subsequent use, assuming you want to add a file with the path name `/data/system_record_file.txt`, you can use the following method.
+
+`Store::new` now takes the `FLASH` peripheral as its first argument, so you need to obtain `peripherals` from `esp_hal::init` first and pass `peripherals.FLASH` in:
 
 ```
+let peripherals = esp_hal::init(esp_hal::Config::default());
+
 let file_name = "/data/system_record_file.txt"; // file name (UTF-8)
 
 let file_data = "Hello World!!!"; // File data (UTF-8)
 
-let mut store = Store::new(0x3A0000, 0x50000);
+let mut store = Store::new(peripherals.FLASH, 0x3A0000, 0x50000);
 
 store.delete_all_data();
 

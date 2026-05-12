@@ -26,14 +26,14 @@ opt-level = 3
 (1b)如果是從crates.io引用的，在`ESP32`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { version = "0.2.3", features = ["esp32"] }
+easy_store = { version = "0.3.0", features = ["esp32"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```
 如果是`ESP32C3`的型號請在`Cargo.toml`中新增
 ```
 [dependencies]
-easy_store = { version = "0.2.3", features = ["esp32c3"] }
+easy_store = { version = "0.3.0", features = ["esp32c3"] }
 [profile.dev.package.esp-storage]
 opt-level = 3
 ```
@@ -67,12 +67,16 @@ runner = "espflash flash --monitor --chip esp32c3 --partition-table partitions.c
 use easy_store::store::Store;
 ```
 
-在後續中使用假設要新增路徑名稱為`/data/系統紀錄檔.txt`的檔案，可以使用下列方式
+在後續中使用假設要新增路徑名稱為`/data/系統紀錄檔.txt`的檔案，可以使用下列方式。
+
+`Store::new` 的第一個參數現在需要傳入 `FLASH` peripheral，所以要先從 `esp_hal::init` 取得 `peripherals` 再把 `peripherals.FLASH` 傳進去：
 ```
+let peripherals = esp_hal::init(esp_hal::Config::default());
+
 let file_name = "/data/系統紀錄檔.txt"; // 檔案名稱（UTF-8）
 let file_data = "Hello World!!!";      // 檔案資料（UTF-8）
 
-let mut store = Store::new(0x3A0000, 0x50000);
+let mut store = Store::new(peripherals.FLASH, 0x3A0000, 0x50000);
 store.delete_all_data();
 
 store.write(file_name,file_data);

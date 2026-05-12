@@ -19,6 +19,8 @@ const CLUSTER_SIZE: usize = 4096;
 const CONCRETE_CLUSTER_SIZE: usize = CLUSTER_SIZE - 8;
 
 pub struct Store {
+    #[cfg(feature = "esp")]
+    flash: FlashStorage<'static>,
     flash_addr: u32,
     flash_size: u32,
     cluster: [u8; CLUSTER_SIZE],
@@ -30,9 +32,10 @@ pub struct Store {
 }
 #[cfg(feature = "esp")]
 impl Store {
-    pub fn new(flash_addr: u32, flash_size: u32) -> Self {
+    pub fn new(flash: esp_hal::peripherals::FLASH<'static>, flash_addr: u32, flash_size: u32) -> Self {
         let cluster_max_quantity: u32 = flash_size / CLUSTER_SIZE as u32;
         let mut store = Self {
+            flash: FlashStorage::new(flash),
             flash_addr,
             flash_size,
             cluster: [0xFF; CLUSTER_SIZE],
@@ -45,7 +48,7 @@ impl Store {
         store.write_cursor = store.init_cursor();
         store
     }
-    fn init_cursor(&self) -> u32 {
+    fn init_cursor(&mut self) -> u32 {
         // 取「最大已用 cluster index + 1」作為起點（mod max），無檔案則回 0
         // 重開機後從這裡接著寫，磨損不會每次都從低位址開始累積
         let mut highest: Option<u32> = None;
@@ -59,7 +62,7 @@ impl Store {
             None => 0,
         }
     }
-    fn find_free_cluster_from(&self, start: u32) -> u32 {
+    fn find_free_cluster_from(&mut self, start: u32) -> u32 {
         // 從 start 繞一圈找 free cluster；全滿時回 start（呼叫端的 flash.write 會 panic，與原行為一致）
         let max = self.cluster_max_quantity;
         let mut n = start % max;
@@ -135,7 +138,7 @@ impl Store {
 
 
     
-    pub fn show_usage_cluster(&self) {
+    pub fn show_usage_cluster(&mut self) {
         println!("檢查目前檔案佔用了那些區塊↴");
         let usage = self.check_usage();
         for i in usage {
@@ -147,7 +150,7 @@ impl Store {
         }
         println!("");
     }
-    pub fn show_usage_capacity(&self){
+    pub fn show_usage_capacity(&mut self){
         let usage = self.check_usage();
         let mut usage_capacity: u32 = 0;
 
@@ -176,7 +179,7 @@ impl Store {
             println!("使用容量 --> {:?} bite", usage_capacity);
         }
     }
-    fn check_usage(&self) -> Vec<bool>{
+    fn check_usage(&mut self) -> Vec<bool>{
 
         let mut usage = alloc::vec![false; self.cluster_max_quantity as usize];
 
@@ -225,41 +228,38 @@ impl Store {
 
     fn delete_cluster (&mut self, cluster_vec: Vec<bool>) {
         // 刪除指定區塊的內容
-        let mut flash = FlashStorage::new();
         for i in 0..self.cluster_max_quantity{
             if cluster_vec[i as usize] {
                 self.cluster[0..CLUSTER_SIZE].fill(0xFF);
                 let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
-                flash.write(delete_addr, &self.cluster).unwrap();
+                self.flash.write(delete_addr, &self.cluster).unwrap();
             }
         }
     }
     pub fn delete_all_data (&mut self) {
         // 刪除指定區塊的內容
-        let mut flash = FlashStorage::new();
         for i in 0..self.cluster_max_quantity{
             self.cluster[0..CLUSTER_SIZE].fill(0xFF);
             let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
-            flash.write(delete_addr, &self.cluster).unwrap();
+            self.flash.write(delete_addr, &self.cluster).unwrap();
         }
     }
 
     pub fn delete(&mut self, file_name: &str) {
         // 刪除檔名的內容
-        let mut flash = FlashStorage::new();
         let cluster_vec = self.check_file_name_exist(file_name);
         let mut n:u32 = 0;
         for i in cluster_vec {
             if i {
                 self.cluster[0..CLUSTER_SIZE].fill(0xFF);
                 let delete_addr = self.flash_addr + CLUSTER_SIZE as u32 * n as u32;
-                flash.write(delete_addr, &self.cluster).unwrap();
+                self.flash.write(delete_addr, &self.cluster).unwrap();
             }
             n += 1;
         }
     }
 
-    pub fn show_file_name_exist(&self, file_name: &str){
+    pub fn show_file_name_exist(&mut self, file_name: &str){
         println!("檢查目前使用【{file_name}】的檔案佔用了那些區塊↴");
         let cluster_vec = self.check_file_name_exist(file_name);
         for i in cluster_vec {
@@ -289,7 +289,7 @@ impl Store {
         Some(idx)
     }
 
-    fn check_file_name_exist(&self, file_name: &str) -> Vec<bool> {
+    fn check_file_name_exist(&mut self, file_name: &str) -> Vec<bool> {
         // 檢查目前使用 file_name 名稱的檔案佔用了那些區塊
         let mut cluster_vec = alloc::vec![false; self.cluster_max_quantity as usize];
 
@@ -304,8 +304,7 @@ impl Store {
 
             let mut cur_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
             let mut bytes = [0u8; CLUSTER_SIZE];
-            let mut flash = FlashStorage::new();
-            flash.read(cur_addr, &mut bytes).unwrap();
+            self.flash.read(cur_addr, &mut bytes).unwrap();
 
             if bytes[data_start..data_start + 4] != self.magic_name.to_be_bytes() {
                 continue;
@@ -349,14 +348,14 @@ impl Store {
                 };
 
                 cur_addr = next_addr;
-                flash.read(cur_addr, &mut bytes).unwrap();
+                self.flash.read(cur_addr, &mut bytes).unwrap();
             }
         }
 
         cluster_vec
     }
 
-    pub fn show_read_dir(&self, path: &str) {
+    pub fn show_read_dir(&mut self, path: &str) {
         println!("路徑【{:?}】下的檔案分別有↴",path);
         for i in 0..self.cluster_max_quantity {
             if self.check_used(i) {
@@ -364,8 +363,7 @@ impl Store {
                 if let Some(data_start) = pos {
                     let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
                     let mut bytes = [0u8; CLUSTER_SIZE];
-                    let mut flash = FlashStorage::new();
-                    flash.read(next_addr, &mut bytes).unwrap();
+                    self.flash.read(next_addr, &mut bytes).unwrap();
                     if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
                         let file_name_bytes = &bytes[data_start + 4..data_start + 8];
                         let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
@@ -391,7 +389,7 @@ impl Store {
     }
 
 
-    pub fn show_all_data_name(&self) {
+    pub fn show_all_data_name(&mut self) {
         println!("全部儲存的檔案名稱 ↴");
         for i in 0..self.cluster_max_quantity {
             if self.check_used(i) {
@@ -399,8 +397,7 @@ impl Store {
                 if let Some(data_start) = pos {
                     let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
                     let mut bytes = [0u8; CLUSTER_SIZE];
-                    let mut flash = FlashStorage::new();
-                    flash.read(next_addr, &mut bytes).unwrap();
+                    self.flash.read(next_addr, &mut bytes).unwrap();
                     if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
                         let file_name_bytes = &bytes[data_start + 4..data_start + 8];
                         let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
@@ -439,8 +436,7 @@ impl Store {
                     Some(data_start) => {
                         let mut next_addr = self.flash_addr + CLUSTER_SIZE as u32 * i as u32;
                         let mut bytes = [0u8; CLUSTER_SIZE];
-                        let mut flash = FlashStorage::new();
-                        flash.read(next_addr, &mut bytes).unwrap();
+                        self.flash.read(next_addr, &mut bytes).unwrap();
                         if &bytes[data_start..data_start + 4] == self.magic_name.to_be_bytes() {
                             let file_name_bytes = &bytes[data_start + 4..data_start + 8];
                             let file_name_len = u32::from_be_bytes(file_name_bytes.try_into().unwrap());
@@ -498,7 +494,7 @@ impl Store {
                                         let next_addr_bytes = &bytes[CLUSTER_SIZE - 4..CLUSTER_SIZE];
                                         next_addr = u32::from_be_bytes(next_addr_bytes.try_into().unwrap());
 
-                                        flash.read(next_addr, &mut bytes).unwrap();
+                                        self.flash.read(next_addr, &mut bytes).unwrap();
 
                                         file_data_len -= CLUSTER_SIZE as u32 - 8 - file_data_start as u32;
 
@@ -533,7 +529,7 @@ impl Store {
 
 
 
-    fn magic_start_index_in_cluster(&self, cluster_number: u32) -> Option<usize> {
+    fn magic_start_index_in_cluster(&mut self, cluster_number: u32) -> Option<usize> {
         // 返回該 cluster 內 magic 或 magic_next 的起始 index
         if cluster_number >= self.cluster_max_quantity {
             return None;
@@ -542,8 +538,7 @@ impl Store {
         let addr = self.flash_addr + CLUSTER_SIZE as u32 * cluster_number;
         let mut bytes = [0u8; CLUSTER_SIZE];
 
-        let mut flash = FlashStorage::new();
-        flash.read(addr, &mut bytes).ok()?;
+        self.flash.read(addr, &mut bytes).ok()?;
 
         self.find_magic_after_leading_ff(&bytes)
     }
@@ -571,11 +566,10 @@ impl Store {
     }
 
     
-    fn check_used(&self, cluster_number: u32) -> bool {
+    fn check_used(&mut self, cluster_number: u32) -> bool {
         let next_addr = self.flash_addr + CLUSTER_SIZE as u32 * cluster_number;
         let mut bytes = [0u8; CLUSTER_SIZE];
-        let mut flash = FlashStorage::new();
-        flash.read(next_addr, &mut bytes).unwrap();
+        self.flash.read(next_addr, &mut bytes).unwrap();
         let pos = self.find_magic_after_leading_ff(&bytes);
 
         match pos {
@@ -599,7 +593,7 @@ impl Store {
         // save_cluster 多 cluster 路徑用這個算 continued_a 指向的下個區塊位址
         self.find_free_cluster_from(self.write_cursor)
     }
-    fn count_free_clusters(&self) -> u32 {
+    fn count_free_clusters(&mut self) -> u32 {
         // 計算目前有多少 free cluster；給 save_cluster 做空間檢查用
         let mut count: u32 = 0;
         for i in 0..self.cluster_max_quantity {
@@ -652,8 +646,7 @@ impl Store {
 
             let next_cluster_n = self.next_cluster();
             let next_addr = self.flash_addr + CLUSTER_SIZE as u32 * next_cluster_n;
-            let mut flash = FlashStorage::new();
-            flash.write(next_addr, &self.cluster).unwrap();
+            self.flash.write(next_addr, &self.cluster).unwrap();
 
         } else {
             let mut remaining = 0 as usize;
@@ -692,9 +685,8 @@ impl Store {
 
                 last_addr = next_addr;
 
-                let mut flash = FlashStorage::new();
-                flash.write(next_addr, &self.cluster).unwrap();
-                
+                self.flash.write(next_addr, &self.cluster).unwrap();
+
             }
         }
     }

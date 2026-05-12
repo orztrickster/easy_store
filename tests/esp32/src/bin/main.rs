@@ -34,7 +34,7 @@ fn main() -> ! {
     esp_alloc::heap_allocator!(size: 72 * 1024);
 
     let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let _peripherals = esp_hal::init(config);
+    let peripherals = esp_hal::init(config);
 
     let file_name_a = "/data/系統紀錄檔.txt";
     let file_data_a = "Hello World!!!";
@@ -69,7 +69,7 @@ fn main() -> ! {
     let file_name_c = "/user/設定檔.txt";
     let file_data_c = "user data...";
 
-    let mut store = Store::new(0x3A0000, 0x50000);
+    let mut store = Store::new(peripherals.FLASH, 0x3A0000, 0x50000);
 
     store.write(file_name_a, file_data_a);
     println!("已存檔 --> {:?}", file_name_a);

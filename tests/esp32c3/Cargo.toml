@@ -9,15 +9,15 @@ name = "esp32c3"
 path = "./src/bin/main.rs"
 
 [dependencies]
-esp-hal = { version = "~1.0", features = ["esp32c3"] }
+esp-hal = { version = "~1.1", features = ["esp32c3"] }
 easy_store = { path = "../..", features = ["esp32c3"] }
 
-esp-bootloader-esp-idf = { version = "0.4.0", features = ["esp32c3"] }
+esp-bootloader-esp-idf = { version = "0.5.0", features = ["esp32c3"] }
 
 critical-section = "1.2.0"
 
 esp-println = { version = "0.12", features = ["esp32c3"] }
-esp-alloc = { version = "0.9.0" }
+esp-alloc = { version = "0.10.0" }
 
 [profile.dev]
 opt-level = "s"
