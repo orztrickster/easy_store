@@ -368,4 +368,5 @@ FodyWeavers.xsd
 # Rust / Cargo
 # =====================
 /target
-**/targetClaudeesp32_check/
+**/target
+Claudeesp32_check/
