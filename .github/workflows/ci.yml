@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # 主機端測試：用 RAM 模擬 flash 跑完整的儲存格式測試（tests/host.rs）
+  host-test:
+    name: Host tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --target x86_64-unknown-linux-gnu
+
+  # RISC-V 晶片：驗證 esp feature 層可以編譯
+  riscv-check:
+    name: Check ${{ matrix.chip }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - chip: esp32c2
+            target: riscv32imc-unknown-none-elf
+          - chip: esp32c3
+            target: riscv32imc-unknown-none-elf
+          - chip: esp32c6
+            target: riscv32imac-unknown-none-elf
+          - chip: esp32h2
+            target: riscv32imac-unknown-none-elf
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo check --features ${{ matrix.chip }} --target ${{ matrix.target }}
+
+  # Xtensa 晶片：需要 esp-rs 的工具鏈
+  xtensa-check:
+    name: Check ${{ matrix.chip }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - chip: esp32
+            target: xtensa-esp32-none-elf
+          - chip: esp32s2
+            target: xtensa-esp32s2-none-elf
+          - chip: esp32s3
+            target: xtensa-esp32s3-none-elf
+    steps:
+      - uses: actions/checkout@v4
+      - uses: esp-rs/xtensa-toolchain@v1.6
+        with:
+          default: true
+          buildtargets: ${{ matrix.chip }}
+      - run: cargo check --features ${{ matrix.chip }} --target ${{ matrix.target }}

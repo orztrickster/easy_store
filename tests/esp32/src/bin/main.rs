@@ -1,4 +1,4 @@
-﻿#![no_std]
+#![no_std]
 #![no_main]
 #![deny(
     clippy::mem_forget,
@@ -16,8 +16,8 @@ use easy_store::store::Store;
 extern crate alloc;
 
 #[panic_handler]
-fn panic(_: &core::panic::PanicInfo) -> ! {
-    println!("錯誤");
+fn panic(info: &core::panic::PanicInfo) -> ! {
+    println!("錯誤 --> {}", info);
     loop {}
 }
 
@@ -29,7 +29,7 @@ esp_bootloader_esp_idf::esp_app_desc!();
 )]
 #[main]
 fn main() -> ! {
-    // 注意：esp-alloc 0.9.0 的 heap_allocator! 要在函式內呼叫（不是 item macro）
+    // 注意：esp-alloc 的 heap_allocator! 要在函式內呼叫（不是 item macro）
     // 且它會提供全域 allocator / heap，不需要另外呼叫 init_heap()
     esp_alloc::heap_allocator!(size: 72 * 1024);
 
@@ -40,7 +40,7 @@ fn main() -> ! {
     let file_data_a = "Hello World!!!";
 
     let file_name_b = "/data/三體.txt";
-    let file_data_b = r#"  
+    let file_data_b = r#"
     《三體：地球往事》
 　　作者：劉慈欣
 
@@ -69,29 +69,59 @@ fn main() -> ! {
     let file_name_c = "/user/設定檔.txt";
     let file_data_c = "user data...";
 
-    let mut store = Store::new(peripherals.FLASH, 0x3A0000, 0x50000);
+    // 0.4.0 起：Store::new 是泛型建構子，ESP 裝置請改用 new_esp
+    let mut store = Store::new_esp(peripherals.FLASH, 0x3A0000, 0x50000);
+    store.delete_all_data().unwrap();
 
-    store.write(file_name_a, file_data_a);
+    store.write(file_name_a, file_data_a).unwrap();
     println!("已存檔 --> {:?}", file_name_a);
-    store.write(file_name_b, file_data_b);
+    store.write(file_name_b, file_data_b).unwrap();
     println!("已存檔 --> {:?}", file_name_b);
-    store.write(file_name_c, file_data_c);
+    store.write(file_name_c, file_data_c).unwrap();
     println!("已存檔 --> {:?}", file_name_c);
 
     store.show_all_data_name();
     store.show_usage_cluster();
     store.show_usage_capacity();
+    store.show_file_name_exist(file_name_a);
+    store.show_read_dir("/data");
 
-    store.show_file_name_exist("/data/系統紀錄檔.txt");
-    store.show_file_name_exist("/data/三體.txt");
+    // 程式化 API：回傳數值，可直接用在邏輯判斷
+    println!("files()          --> {:?}", store.files());
+    println!("read_dir(\"/\")    --> {:?}", store.read_dir("/"));
+    println!("exists(紀錄檔)   --> {}", store.exists(file_name_a));
+    println!("file_size(三體)  --> {:?}", store.file_size(file_name_b));
+    println!("capacity()       --> {} bytes", store.capacity());
+    println!("used_space()     --> {} bytes", store.used_space());
+    println!("free_space()     --> {} bytes", store.free_space());
 
-    store.show_read_dir(&"/data");
-
-    let file_data = store.read("/data/系統紀錄檔.txt");
+    let file_data = store.read(file_name_a).unwrap();
     println!("讀取檔案內容 ↴\n{}", file_data);
 
-    let file_data = store.read("/data/三體.txt");
+    let file_data = store.read(file_name_b).unwrap();
     println!("讀取檔案內容 ↴\n{}", file_data);
+
+    // 部分讀取：大檔案不必整份載入 RAM
+    let mut part = [0u8; 8];
+    let n = store.read_range(file_name_a, 6, &mut part).unwrap();
+    println!(
+        "read_range(offset 6, {} bytes) --> {:?}",
+        n,
+        core::str::from_utf8(&part[..n]).unwrap()
+    );
+
+    // 追加寫入（記錄 log 常用；檔案不存在會自動建立）
+    store.append("/data/開機紀錄.log", "boot ok\n").unwrap();
+    store.append("/data/開機紀錄.log", "sensor ok\n").unwrap();
+    println!("append 結果 ↴\n{}", store.read("/data/開機紀錄.log").unwrap());
+
+    // 更名與刪除
+    store.rename("/user/設定檔.txt", "/user/設定檔.bak").unwrap();
+    println!("rename 後 files() --> {:?}", store.files());
+    let n = store.delete_dir("/user").unwrap();
+    println!("delete_dir(\"/user\") 刪除了 {} 個檔案", n);
+    store.delete(file_name_a).unwrap();
+    println!("最後剩下 --> {:?}", store.files());
 
     loop {
         let delay_start = Instant::now();

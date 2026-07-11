@@ -1,11 +1,13 @@
 [package]
 name = "easy_store"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 license = "MIT"
-description = "A simple flash storage format for embedded systems"
+description = "A simple file storage for SPI NOR flash on embedded systems (ESP32 family, or any embedded-storage backend)"
 repository = "https://github.com/orztrickster/easy_store"
 authors = ["Yun-De Huang <startime_electronics@orztrickster.com>"]
+keywords = ["esp32", "flash", "storage", "embedded", "no-std"]
+categories = ["embedded", "no-std", "filesystem"]
 
 [features]
 default = []
@@ -30,6 +32,9 @@ embedded-storage = "0.3.0"
 esp-hal = { version = "~1.1", features = ["unstable"], optional = true }
 esp-storage = { version = "0.9", optional = true }
 esp-println = { version = "0.12", optional = true }
+
+[dev-dependencies]
+embedded-storage = "0.3.0"
 
 [profile.dev.package.esp-storage]
 opt-level = 3
